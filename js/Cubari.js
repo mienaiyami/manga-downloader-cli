@@ -1,12 +1,14 @@
 import fetch from "node-fetch";
 import { makeFileSafe } from "./utility.js";
 import DownloadQueue from "./DownloadQueue.js";
+import { createSpinner } from "nanospinner";
 export default class Cubari {
     /**
      *
      * @param link cubari gist link
      */
     static download(link, start, count = 0) {
+        const spinner = createSpinner("Getting Data...").start();
         fetch(link)
             .then((e) => e.json())
             .then((e) => {
@@ -21,12 +23,16 @@ export default class Cubari {
                 }
             }
             // fs.writeFileSync("./test.json",JSON.stringify(filtered,null,"\t"));
-            const queue = new DownloadQueue(e.title, filtered);
-            queue.start();
+            if (filtered.length > 0) {
+                spinner.success();
+                const queue = new DownloadQueue(e.title, filtered);
+                queue.start();
+            }
             // filtered.forEach((e) => {
             //     const savePath = path.join(saveDir, e.name);
             //     e.pages.forEach((e, i) => saveImage(e, i, savePath));
             // });
-        });
+        })
+            .catch((e) => spinner.error({ text: e }));
     }
 }

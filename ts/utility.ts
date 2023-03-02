@@ -1,3 +1,6 @@
+import path from "path";
+import chalk from "chalk";
+
 export type Data = { name: string; pages: string[] };
 
 export const sleep = async (ms: number) => new Promise((res) => setTimeout(res, ms));
@@ -7,3 +10,10 @@ export const sleep = async (ms: number) => new Promise((res) => setTimeout(res, 
 export const makeFileSafe = (string: string): string => {
     return string.replace(/(\:|\\|\/|\||\<|\>|\*|\?)/g, "");
 };
+
+export type ISETTINGS = {
+    saveDir: string;
+};
+export const settingsPath = path.resolve("./SETTINGS.json");
+
+export const makeLine = (n = 30, color = chalk.greenBright) => console.log(color("━".repeat(n)));

@@ -1,32 +1,41 @@
 import chalk from "chalk";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import inquirer from "inquirer";
+import { createSpinner } from "nanospinner";
 import path from "path";
+
 import Cubari from "./Cubari.js";
 import MangareaderTo from "./MangareaderTo.js";
-import { settingsPath } from "./utility.js";
+import { ISETTINGS, settingsPath } from "./utility.js";
+
 const log = console.log;
+
 // const cubariGistLink = "https://gist.githubusercontent.com/funkyhippo/1d40bd5dae11e03a6af20e5a9a030d81/raw/?";
+
 // Cubari.download(cubariGistLink, 167);
 // const mangareaderUrl = "https://mangareader.to/one-piece-3";
+
 // MangareaderTo.download(mangareaderUrl, 1075, 999);
+
 if (!existsSync(settingsPath)) {
-    const temp = {
+    const temp: ISETTINGS = {
         saveDir: path.resolve("./downloads"),
     };
     writeFileSync(settingsPath, JSON.stringify(temp, null, "\t"));
 }
-const SETTINGS = JSON.parse(readFileSync(settingsPath, "utf-8"));
+const SETTINGS: ISETTINGS = JSON.parse(readFileSync(settingsPath, "utf-8"));
+
 const linkToClass = new Map();
 linkToClass.set("https://mangareader.to/", MangareaderTo);
 linkToClass.set("https://gist.githubusercontent.com/", Cubari);
-const validSite = (url) => {
+
+const validSite = (url: string) => {
     for (const e of linkToClass.keys()) {
-        if (url.includes(e))
-            return true;
+        if (url.includes(e)) return true;
     }
     return false;
 };
+
 const start = async () => {
     console.log(`
 ${chalk.greenBright("━━━━━━━━━━━━━━━━ Manga downloader ━━━━━━━━━━━━━━━━")}
@@ -72,4 +81,5 @@ ${chalk.greenBright("━━━━━━━━━━━━━━━━━━━�
     const downloader = linkToClass.get([...linkToClass.keys()].find((e) => mangaUrl.mangaUrl.includes(e)));
     downloader.download(mangaUrl.mangaUrl, parseFloat(chapter.chapterStart), parseInt(chapter.count));
 };
+
 await start();

@@ -1,8 +1,10 @@
-import { sleep } from "./utility.js";
+import { makeLine, settingsPath, sleep } from "./utility.js";
 import path from "path";
-import fs from "fs";
+import fs, { readFileSync } from "fs";
 import { fileTypeFromBuffer } from "file-type";
 import fetch from "node-fetch";
+import chalk from "chalk";
+import { createSpinner } from "nanospinner";
 export default class DownloadQueue {
     data = [];
     // private downloaded: Data[] = [];
@@ -20,11 +22,20 @@ export default class DownloadQueue {
     constructor(manga, data, timeBetweenImage = 0, timeBetweenChapter = 0) {
         this.data = data;
         this.mangaName = manga;
-        this.mangaDir = path.resolve(`./${manga}/`);
+        const SETTINGS = JSON.parse(readFileSync(settingsPath, "utf-8"));
+        this.mangaDir = path.join(SETTINGS.saveDir, manga);
+        // this.mangaDir = path.resolve(`./downloads/${manga}/`);
+        //D:\old hdd stuff\mangas\
         this.timeBetweenChapter = timeBetweenChapter;
         this.timeBetweenImage = timeBetweenImage;
+        if (!fs.existsSync(path.resolve(`./downloads/`)))
+            fs.mkdirSync(`./downloads/`);
         if (!fs.existsSync(this.mangaDir))
             fs.mkdirSync(this.mangaDir);
+        makeLine();
+        console.log(chalk.greenBright("Manga:"), manga);
+        console.log(chalk.greenBright("Directory:"), this.mangaDir);
+        makeLine();
     }
     async start() {
         if (this.data.length >= 1) {
@@ -35,24 +46,28 @@ export default class DownloadQueue {
             else {
                 const aa = fs.readdirSync(saveDir);
                 if (aa.length === cur.pages.length) {
-                    console.log(cur.name, "already exists.");
+                    console.log(chalk.redBright(`"${cur.name}"`, "already exists."));
                     this.data.shift();
                     this.start();
                     return;
                 }
             }
             let downloadedCount = 0;
-            console.log("Downloading :", cur.name);
+            console.log(chalk.greenBright("Downloading:"), cur.name);
+            const spinner = createSpinner("0/" + cur.pages.length).start();
             for (const [i, e] of cur.pages.entries()) {
                 await sleep(this.timeBetweenImage);
-                process.stdout.write(downloadedCount + "/" + cur.pages.length);
                 this.downloadImage(e, i, saveDir).then(() => {
                     downloadedCount++;
-                    process.stdout.clearLine(0);
-                    process.stdout.cursorTo(0);
+                    spinner.update({ text: downloadedCount + "/" + cur.pages.length });
+                    // process.stdout.clearLine(-1);
+                    // process.stdout.cursorTo(0);
+                    // process.stdout.write(downloadedCount + "/" + cur.pages.length);
                     if (downloadedCount >= cur.pages.length) {
-                        console.log("Downloaded all images in chapter " + cur.name);
+                        // console.log("Downloaded all images in chapter " + cur.name);
+                        // process.stdout.write("\n");
                         this.data.shift();
+                        spinner.success();
                         sleep(this.timeBetweenChapter).then(() => {
                             this.start();
                         });
@@ -61,12 +76,13 @@ export default class DownloadQueue {
             }
         }
         else
-            console.log("Downloaded All.");
+            console.log(chalk.greenBright("Downloaded all Chapters."));
     }
     async downloadImage(url, i, dir) {
+        i++;
         const res = await fetch(url);
         if (!res.ok) {
-            console.log(url, "didnt load, retrying in 5s");
+            console.log(url, "didn't load, retrying in 5s.");
             await sleep(5000);
             this.downloadImage(url, i, dir);
             return;
@@ -79,7 +95,7 @@ export default class DownloadQueue {
             fs.createWriteStream(path.join(dir, p)).write(buffer);
         }
         else {
-            console.error("error saving", dir, i, "\n");
+            console.error(chalk.redBright("error saving", dir, i, "\n"));
         }
     }
 }
