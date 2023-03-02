@@ -15,16 +15,22 @@ Require nodejs v14+
 #### Installation
 
 Run
-``` npm install```
+```
+npm install
+```
 
 or 
 
-```yarn install```
+```
+yarn install
+```
 
 in base directory.
 
 #### Run app
 
-``` node .```
+```
+node .
+```
 
 in base directory.
