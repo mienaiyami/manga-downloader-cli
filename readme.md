@@ -33,4 +33,8 @@ in base directory.
 node .
 ```
 
-in base directory.
+in base directory or add base directory to env path and run 
+```
+manga
+```
+anywhere in terminal.

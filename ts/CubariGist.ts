@@ -16,15 +16,33 @@ export default class Cubari {
             .then((e) => e.json())
             .then((e: any) => {
                 const filtered: Data[] = [];
-                for (const key in e.chapters) {
-                    if (parseFloat(key) >= start && parseFloat(key) <= start + count) {
+
+                if (start < 0) {
+                    const tempData = [];
+                    for (const key in e.chapters) {
                         const obj = e.chapters[key];
-                        filtered.push({
+                        tempData.push({
                             name: makeFileSafe(obj.title),
                             pages: obj.groups[Object.keys(obj.groups)[0]],
+                            number: parseFloat(key),
                         });
                     }
-                }
+                    filtered.push(
+                        ...tempData
+                            .sort((a, b) => (a.number < b.number ? -1 : 1))
+                            .splice(start)
+                            .map((e) => ({ name: e.name, pages: e.pages }))
+                    );
+                } else
+                    for (const key in e.chapters) {
+                        if (parseFloat(key) >= start && parseFloat(key) <= start + count) {
+                            const obj = e.chapters[key];
+                            filtered.push({
+                                name: makeFileSafe(obj.title),
+                                pages: obj.groups[Object.keys(obj.groups)[0]],
+                            });
+                        }
+                    }
                 // fs.writeFileSync("./test.json",JSON.stringify(filtered,null,"\t"));
                 if (filtered.length > 0) {
                     spinner.success();

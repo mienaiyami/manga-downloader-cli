@@ -36,6 +36,9 @@ export default class DownloadQueue {
         console.log(chalk.greenBright("Manga:"), manga);
         console.log(chalk.greenBright("Directory:"), this.mangaDir);
         makeLine();
+        console.log("Downloading following chapters:");
+        console.log(" - " + data.map((e) => e.name).join("\n - "));
+        makeLine();
     }
     async start() {
         if (this.data.length >= 1) {
@@ -45,7 +48,7 @@ export default class DownloadQueue {
                 fs.mkdirSync(saveDir);
             else {
                 const aa = fs.readdirSync(saveDir);
-                if (aa.length === cur.pages.length) {
+                if (aa.length >= cur.pages.length) {
                     console.log(chalk.redBright(`"${cur.name}"`, "already exists."));
                     this.data.shift();
                     this.start();
@@ -75,8 +78,9 @@ export default class DownloadQueue {
                 });
             }
         }
-        else
+        else {
             console.log(chalk.greenBright("Downloaded all Chapters."));
+        }
     }
     async downloadImage(url, i, dir) {
         i++;

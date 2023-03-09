@@ -13,7 +13,7 @@ export const makeFileSafe = (string: string): string => {
 
 export type ISETTINGS = {
     saveDir: string;
+    quickLinks: string[];
 };
 export const settingsPath = path.resolve("./SETTINGS.json");
-
 export const makeLine = (n = 30, color = chalk.greenBright) => console.log(color("━".repeat(n)));

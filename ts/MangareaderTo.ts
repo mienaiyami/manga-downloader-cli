@@ -29,20 +29,44 @@ export default class MangareaderTo {
             return { mangaName, chapters };
         }
         const mangaName = document.querySelector("#ani_detail .manga-name")?.textContent || "eeeeeeeeee";
-        document.querySelectorAll("#en-chapters > li.chapter-item").forEach((e) => {
-            const chapterNumber = e.getAttribute("data-number");
-            if (chapterNumber) {
-                if (parseFloat(chapterNumber) >= start && parseFloat(chapterNumber) <= start + count) {
-                    const anchor = e.querySelector("a");
-                    if (anchor) {
-                        data.push({
-                            name: makeFileSafe(anchor?.title) || "",
-                            url: `https://mangareader.to` + anchor.href,
-                        });
+        if (start < 0) {
+            const tempData = [...document.querySelectorAll("#en-chapters > li.chapter-item")]
+                .map((e) => {
+                    const chapterNumber = parseFloat(e.getAttribute("data-number") || " ");
+                    if (chapterNumber) {
+                        const anchor = e.querySelector("a");
+                        if (anchor) {
+                            return {
+                                number: chapterNumber,
+                                name: makeFileSafe(anchor?.title) || "",
+                                url: `https://mangareader.to` + anchor.href,
+                            };
+                        } else return { name: "", url: "", number: 0 };
+                    } else return { name: "", url: "", number: 0 };
+                })
+                .filter((e) => e.url !== "");
+            data.push(
+                ...tempData
+                    .sort((a, b) => (a.number < b.number ? -1 : 1))
+                    .splice(start)
+                    .map((e) => ({ name: e.name, url: e.url }))
+                    .reverse()
+            );
+        } else
+            document.querySelectorAll("#en-chapters > li.chapter-item").forEach((e) => {
+                const chapterNumber = parseFloat(e.getAttribute("data-number") || " ");
+                if (chapterNumber) {
+                    if (chapterNumber >= start && chapterNumber <= start + count) {
+                        const anchor = e.querySelector("a");
+                        if (anchor) {
+                            data.push({
+                                name: makeFileSafe(anchor?.title) || "",
+                                url: `https://mangareader.to` + anchor.href,
+                            });
+                        }
                     }
                 }
-            }
-        });
+            });
         return { mangaName, chapters: data.reverse() };
     }
     async getImages(url: string) {
