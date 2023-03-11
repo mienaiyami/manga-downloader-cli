@@ -14,6 +14,7 @@ export default class DownloadQueue {
     private mangaDir: string = "";
     private timeBetweenImage = 0;
     private timeBetweenChapter = 0;
+    private retryCount: number[] = [];
     /**
      *
      * @param manga name of manga to be saved
@@ -58,8 +59,10 @@ export default class DownloadQueue {
             let downloadedCount = 0;
             console.log(chalk.greenBright("Downloading:"), cur.name);
             const spinner = createSpinner("0/" + cur.pages.length).start();
+            this.retryCount = new Array(cur.pages.length).fill(0);
             for (const [i, e] of cur.pages.entries()) {
                 await sleep(this.timeBetweenImage);
+                this.retryCount[i] = 0;
                 this.downloadImage(e, i, saveDir).then(() => {
                     downloadedCount++;
                     spinner.update({ text: downloadedCount + "/" + cur.pages.length });
@@ -83,21 +86,32 @@ export default class DownloadQueue {
     }
     private async downloadImage(url: string, i: number, dir: string) {
         i++;
-        const res = await fetch(url);
-        if (!res.ok) {
-            console.log(url, "didn't load, retrying in 5s.");
-            await sleep(5000);
-            this.downloadImage(url, i, dir);
-            return;
-        }
-        const arrBuffer = await res.arrayBuffer();
-        const buffer = Buffer.from(arrBuffer);
-        const fileType = await fileTypeFromBuffer(buffer);
-        if (fileType) {
-            const p = i.toString().padStart(3, "0") + "." + fileType.ext;
-            fs.createWriteStream(path.join(dir, p)).write(buffer);
-        } else {
-            console.error(chalk.redBright("error saving", dir, i, "\n"));
+        try {
+            const res = await fetch(url);
+            if (!res.ok) {
+                console.log(url, "didn't load, retrying in 5s.");
+                await sleep(5000);
+                this.downloadImage(url, i - 1, dir);
+                return;
+            }
+            const arrBuffer = await res.arrayBuffer();
+            const buffer = Buffer.from(arrBuffer);
+            const fileType = await fileTypeFromBuffer(buffer);
+            if (fileType) {
+                const p = i.toString().padStart(3, "0") + "." + fileType.ext;
+                fs.createWriteStream(path.join(dir, p)).write(buffer);
+            } else {
+                console.error(chalk.redBright("error saving", dir, i, "\n"));
+            }
+        } catch {
+            this.retryCount[i - 1]++;
+            process.stdout.clearLine(0);
+            process.stdout.cursorTo(0);
+            if (this.retryCount[i - 1] > 3)
+                return console.error(chalk.redBright("Unable to donload page " + i + "."));
+            console.error(chalk.redBright("Could not download page " + i + ", retrying in 10sec"));
+            await sleep(10000);
+            this.downloadImage(url, i - 1, dir);
         }
     }
 }

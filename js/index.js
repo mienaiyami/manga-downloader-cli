@@ -3,6 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import inquirer from "inquirer";
 import path from "path";
 import CubariGist from "./CubariGist.js";
+import MangaKatana from "./MangaKatana.js";
 import MangareaderTo from "./MangareaderTo.js";
 import { settingsPath } from "./utility.js";
 // const cubariGistLink = "https://gist.githubusercontent.com/funkyhippo/1d40bd5dae11e03a6af20e5a9a030d81/raw/?";
@@ -28,6 +29,7 @@ const addQuickLinkToSettings = (url, note) => {
 const linkToClass = new Map();
 linkToClass.set("https://mangareader.to/", MangareaderTo);
 linkToClass.set("https://gist.githubusercontent.com/", CubariGist);
+linkToClass.set("https://mangakatana.com/", MangaKatana);
 const validSite = (url) => {
     for (const e of linkToClass.keys()) {
         if (url.includes(e))
@@ -43,6 +45,7 @@ ${chalk.greenBright("━━━━━━━━━━━━━━━━ Manga down
 Supported sites:
  - https://mangareader.to/  (can't download shuffled images.)
  - https://cubari.moe/  (gist link only e.x. https://gist.githubusercontent.com/)
+ - https://mangakatana.com/
 
 ${chalk.greenBright("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")}
 
@@ -101,7 +104,7 @@ ${chalk.greenBright("━━━━━━━━━━━━━━━━━━━�
             : await inquirer.prompt({
                 name: "mangaUrl",
                 type: "input",
-                message: "Enter Manga URL from site:",
+                message: "Enter Manga/Chapter URL from site:",
                 validate(input) {
                     return !validSite(input) ? chalk.red("Invalid Link") : true;
                 },

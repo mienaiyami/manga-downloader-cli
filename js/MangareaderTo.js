@@ -17,8 +17,12 @@ export default class MangareaderTo {
         const html = await raw.text();
         const { document } = new JSDOM(html).window;
         if (url.includes("https://mangareader.to/read/")) {
-            const mangaName = document.querySelector("#header .manga-name")?.textContent || "eeeeeeeeee";
-            const name = url.split("/").pop() || "eeeeeeeeee";
+            const mangaName = makeFileSafe(document.querySelector("#header .manga-name")?.textContent || "eeeeeeeeee");
+            const name = makeFileSafe(document
+                .querySelector('meta[name="keywords"]')
+                ?.getAttribute("content")
+                ?.split(",")[0]
+                .replace(`${mangaName} `, "") || "eeeeeeeeee");
             spinner.stop();
             spinner.clear();
             console.log(chalk.redBright("mangareader.to chapter link used. Chapter name might not be accurate."));
@@ -26,7 +30,7 @@ export default class MangareaderTo {
             const chapters = [{ name, url }];
             return { mangaName, chapters };
         }
-        const mangaName = document.querySelector("#ani_detail .manga-name")?.textContent || "eeeeeeeeee";
+        const mangaName = makeFileSafe(document.querySelector("#ani_detail .manga-name")?.textContent || "eeeeeeeeee");
         if (start < 0) {
             const tempData = [...document.querySelectorAll("#en-chapters > li.chapter-item")]
                 .map((e) => {

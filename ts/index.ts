@@ -4,6 +4,7 @@ import inquirer from "inquirer";
 import path from "path";
 
 import CubariGist from "./CubariGist.js";
+import MangaKatana from "./MangaKatana.js";
 import MangareaderTo from "./MangareaderTo.js";
 import { ISETTINGS, settingsPath } from "./utility.js";
 
@@ -33,6 +34,7 @@ const addQuickLinkToSettings = (url: string, note: string) => {
 const linkToClass = new Map();
 linkToClass.set("https://mangareader.to/", MangareaderTo);
 linkToClass.set("https://gist.githubusercontent.com/", CubariGist);
+linkToClass.set("https://mangakatana.com/", MangaKatana);
 
 const validSite = (url: string) => {
     for (const e of linkToClass.keys()) {
@@ -49,6 +51,7 @@ ${chalk.greenBright("━━━━━━━━━━━━━━━━ Manga down
 Supported sites:
  - https://mangareader.to/  (can't download shuffled images.)
  - https://cubari.moe/  (gist link only e.x. https://gist.githubusercontent.com/)
+ - https://mangakatana.com/
 
 ${chalk.greenBright("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")}
 
@@ -70,7 +73,6 @@ ${chalk.greenBright("━━━━━━━━━━━━━━━━━━━�
     if (option.option === choices[1] && (!SETTINGS.quickLinks || SETTINGS.quickLinks.length === 0)) {
         return console.error(chalk.redBright("Quick link list if empty."));
     }
-
     if (option.option === choices[2]) {
         const mangaUrl = await inquirer.prompt([
             {
@@ -108,7 +110,7 @@ ${chalk.greenBright("━━━━━━━━━━━━━━━━━━━�
                 : await inquirer.prompt({
                       name: "mangaUrl",
                       type: "input",
-                      message: "Enter Manga URL from site:",
+                      message: "Enter Manga/Chapter URL from site:",
                       validate(input) {
                           return !validSite(input) ? chalk.red("Invalid Link") : true;
                       },
