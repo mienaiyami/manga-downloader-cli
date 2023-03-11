@@ -5,7 +5,7 @@ import path from "path";
 import CubariGist from "./CubariGist.js";
 import MangaKatana from "./MangaKatana.js";
 import MangareaderTo from "./MangareaderTo.js";
-import { settingsPath } from "./utility.js";
+import { settingsPath, sleep } from "./utility.js";
 // const cubariGistLink = "https://gist.githubusercontent.com/funkyhippo/1d40bd5dae11e03a6af20e5a9a030d81/raw/?";
 // Cubari.download(cubariGistLink, 167);
 // const mangareaderUrl = "https://mangareader.to/one-piece-3";
@@ -37,6 +37,16 @@ const validSite = (url) => {
     }
     return false;
 };
+const checkNewRelease = async () => {
+    console.log("Checking for new chapters from quick links...");
+    for (const entry of SETTINGS.quickLinks) {
+        const link = entry.split(" => ")[0];
+        const downloader = linkToClass.get([...linkToClass.keys()].find((e) => link.includes(e)));
+        await downloader.checkForNew(link);
+        await sleep(3000);
+    }
+    console.log("Checked all links.");
+};
 export const start = async () => {
     console.clear();
     console.log(`
@@ -56,7 +66,12 @@ Quick Links:
 ${(SETTINGS.quickLinks || []).map((e, i) => `${i + 1}. ${e}\n`).join("")}
 ${chalk.greenBright("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")}
     `);
-    const choices = ["Download with Link", "Download with Quick Link", "Save link for quick access"];
+    const choices = [
+        "Download with Link",
+        "Download with Quick Link",
+        "Save link for quick access",
+        "Check for new chapters",
+    ];
     const option = await inquirer.prompt({
         name: "option",
         type: "list",
@@ -64,8 +79,12 @@ ${chalk.greenBright("━━━━━━━━━━━━━━━━━━━�
         choices,
         default: 0,
     });
-    if (option.option === choices[1] && (!SETTINGS.quickLinks || SETTINGS.quickLinks.length === 0)) {
+    if ((option.option === choices[1] || option.option === choices[3]) &&
+        (!SETTINGS.quickLinks || SETTINGS.quickLinks.length === 0)) {
         return console.error(chalk.redBright("Quick link list if empty."));
+    }
+    if (option.option === choices[3]) {
+        return checkNewRelease();
     }
     if (option.option === choices[2]) {
         const mangaUrl = await inquirer.prompt([
@@ -86,7 +105,7 @@ ${chalk.greenBright("━━━━━━━━━━━━━━━━━━━�
                 },
             },
         ]);
-        addQuickLinkToSettings(mangaUrl.mangaUrl, mangaUrl.note.replace("=>", ""));
+        addQuickLinkToSettings(mangaUrl.mangaUrl, mangaUrl.note.replace("=>", "").trim());
         start();
     }
     else {

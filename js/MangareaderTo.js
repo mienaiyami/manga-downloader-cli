@@ -1,11 +1,13 @@
 import fetch from "node-fetch";
-import { makeFileSafe, sleep } from "./utility.js";
+import { makeFileSafe, settingsPath, sleep } from "./utility.js";
 import DownloadQueue from "./DownloadQueue.js";
 import { JSDOM } from "jsdom";
+import fs from "fs";
 import chalk from "chalk";
 import { createSpinner } from "nanospinner";
+import path from "path";
 export default class MangareaderTo {
-    async getChapters(url, start = 0, count = 0, spinner) {
+    async getChapters(url, start = 0, count = 0) {
         const data = [];
         const raw = await fetch(url);
         if (!raw.ok) {
@@ -23,10 +25,10 @@ export default class MangareaderTo {
                 ?.getAttribute("content")
                 ?.split(",")[0]
                 .replace(`${mangaName} `, "") || "eeeeeeeeee");
-            spinner.stop();
-            spinner.clear();
+            // spinner.stop();
+            // spinner.clear();
             console.log(chalk.redBright("mangareader.to chapter link used. Chapter name might not be accurate."));
-            spinner.start();
+            // spinner.start();
             const chapters = [{ name, url }];
             return { mangaName, chapters };
         }
@@ -103,7 +105,7 @@ export default class MangareaderTo {
     static async download(link, start, count = 0) {
         const spinner = createSpinner("Getting Data...").start();
         const instance = new MangareaderTo();
-        const { mangaName, chapters } = await instance.getChapters(link, start, count, spinner);
+        const { mangaName, chapters } = await instance.getChapters(link, start, count);
         let data = [];
         for (let e of chapters) {
             await sleep(4000);
@@ -125,5 +127,35 @@ export default class MangareaderTo {
             spinner.error({ text: chalk.redBright("No chapters.") });
         }
         // writeFileSync("./test.json", JSON.stringify(data, null, "\t"));
+    }
+    static async checkForNew(link) {
+        const spinner = createSpinner("Checking for new chapters.").start();
+        const instance = new MangareaderTo();
+        const { mangaName, chapters } = await instance.getChapters(link);
+        spinner.update({ text: 'Checking for new chapters in "' + mangaName + '"' });
+        const mangaDir = path.join(JSON.parse(fs.readFileSync(settingsPath, "utf-8")).saveDir, mangaName);
+        if (fs.existsSync(mangaDir)) {
+            fs.readdir(mangaDir, async (err, files) => {
+                if (err)
+                    return console.error(err);
+                let lastChapterIndex = -1;
+                chapters.forEach((e, i) => {
+                    if (files.includes(e.name))
+                        lastChapterIndex = i;
+                });
+                if (lastChapterIndex !== chapters.length - 1) {
+                    const newChapterIndex = lastChapterIndex + 1;
+                    spinner.success({
+                        text: chalk.greenBright(`${newChapterIndex - lastChapterIndex + 1} new chapters in "${mangaName}".`),
+                    });
+                    return this.download(link, newChapterIndex + 1, 9999);
+                }
+                else
+                    spinner.success({ text: chalk.greenBright('No new chapters in "' + mangaName + '"') });
+            });
+        }
+        else {
+            spinner.error({ text: chalk.redBright("Could not find manga directory: " + mangaDir) });
+        }
     }
 }
