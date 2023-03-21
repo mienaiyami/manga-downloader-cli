@@ -12,6 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "chalk": "^5.2.0",
+    "commander": "^10.0.0",
     "file-type": "^18.2.1",
     "inquirer": "^9.1.4",
     "jsdom": "^21.1.0",

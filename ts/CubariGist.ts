@@ -130,6 +130,7 @@ export default class Cubari {
                         number: parseFloat(key),
                     });
                 }
+                chapters.sort((a, b) => (a.number < b.number ? -1 : 1));
                 const mangaDir = path.join(
                     (JSON.parse(fs.readFileSync(settingsPath, "utf-8")) as ISETTINGS).saveDir,
                     json.title
@@ -138,19 +139,20 @@ export default class Cubari {
                 if (fs.existsSync(mangaDir)) {
                     fs.readdir(mangaDir, async (err, files) => {
                         if (err) return console.error(err);
-                        let lastChapterIndex = -1;
+                        let lastChapterNumber = -1;
                         chapters.forEach((e, i) => {
-                            if (files.includes(e.name)) lastChapterIndex = i;
+                            if (files.includes(e.name)) lastChapterNumber = e.number;
                         });
-
-                        if (lastChapterIndex !== chapters.length - 1) {
-                            const newChapterIndex = lastChapterIndex + 1;
+                        if (lastChapterNumber < chapters[chapters.length - 1].number) {
+                            const LCIndex = chapters.findIndex((e) => e.number === lastChapterNumber);
+                            // coz can be float
+                            const newChapterNumberStart = chapters[LCIndex + 1].number;
                             spinner.success({
                                 text: chalk.greenBright(
-                                    `${newChapterIndex - lastChapterIndex + 1} new chapters in "${json.title}".`
+                                    `${chapters.splice(LCIndex + 1).length} new chapters in "${json.title}".`
                                 ),
                             });
-                            return this.download(link, newChapterIndex + 1, 9999);
+                            return this.download(link, newChapterNumberStart, 9999);
                         } else
                             spinner.success({
                                 text: chalk.greenBright('No new chapters in "' + json.title + '"'),

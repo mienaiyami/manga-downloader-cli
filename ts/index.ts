@@ -3,7 +3,7 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import inquirer from "inquirer";
 import { createSpinner } from "nanospinner";
 import path from "path";
-
+import pkgJSON from "../package.json";
 import CubariGist from "./CubariGist.js";
 import MangaKatana from "./MangaKatana.js";
 import MangareaderTo from "./MangareaderTo.js";
@@ -15,6 +15,9 @@ import { ISETTINGS, settingsPath, sleep } from "./utility.js";
 // const mangareaderUrl = "https://mangareader.to/one-piece-3";
 
 // MangareaderTo.download(mangareaderUrl, 1075, 999);
+
+import { Command } from "commander";
+const program = new Command();
 
 if (!existsSync(settingsPath)) {
     const temp: ISETTINGS = {
@@ -55,24 +58,91 @@ const checkNewRelease = async () => {
     console.log("Checked all links.");
 };
 
+const downloadMangaFromLink = async (mangaURL: string, chapterStart: number, chapterCount: number) => {
+    const downloader = linkToClass.get([...linkToClass.keys()].find((e) => mangaURL.includes(e)));
+    await downloader.download(mangaURL, chapterStart, chapterCount);
+};
+
+program.name("Manga Downloader").description("CLI to download manga from hosting sites.").version(pkgJSON.version);
+
+program
+    .command("manga")
+    .description("Download Manga from Link")
+    .argument("<manga-url>", "link of manga")
+    .option("-s, --start <chapter-number>", "start download from this chapter number", "0")
+    .option("-c, --count <chapter-count>", "numbers of chapter download from defined start", "0")
+    .action((str, options) => {
+        if (validSite(str)) {
+            if (isNaN(parseFloat(options.start)) || isNaN(parseFloat(options.count))) {
+                console.error(chalk.redBright("Please enter nummber for --start and --count."));
+                process.exit(1);
+            }
+            downloadMangaFromLink(str, parseFloat(options.start), parseFloat(options.count));
+        } else {
+            console.error(chalk.redBright("Site not supported."));
+            process.exit(1);
+        }
+    });
+
+program
+    .command("save")
+    .description("Save quick link")
+    .argument("<manga-url>", "link of manga")
+    .argument("<note>", "note or keyword to identify the link")
+    .action((url, note) => {
+        if (validSite(url)) {
+            addQuickLinkToSettings(url, note.replace("=>", "").trim());
+        } else {
+            console.error(chalk.redBright("Site not supported."));
+            process.exit(1);
+        }
+    });
+
+program
+    .command("check")
+    .description("Check quick links for new chapters(manga folder must have last chapter for this to work)")
+    .action(() => {
+        checkNewRelease();
+    });
+
+if (process.argv.length > 2)
+    // move to end
+    program.parse();
+// process.exit(0);
+
+///
+///
+///
+///
+///
+///
+///
+///
+///
+///
+
 export const start = async () => {
     console.clear();
     console.log(`
-${chalk.greenBright("━━━━━━━━━━━━━━━━ Manga downloader ━━━━━━━━━━━━━━━━")}
+${chalk.greenBright(
+    "━".repeat((process.stdout.columns - 18) / 2) +
+        " Manga downloader " +
+        "━".repeat((process.stdout.columns - 18) / 2)
+)}
 
 Supported sites:
  - https://mangareader.to/  (can't download shuffled images.)
  - https://cubari.moe/  (gist link only e.x. https://gist.githubusercontent.com/)
  - https://mangakatana.com/
 
-${chalk.greenBright("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")}
+${chalk.greenBright("━".repeat(process.stdout.columns))}
 
 Input "Start download from chapter" in -ve to download from last. e.g. "-2" to download last 2 chapters.
 
 Quick Links:
 
 ${(SETTINGS.quickLinks || []).map((e, i) => `${i + 1}. ${e}\n`).join("")}
-${chalk.greenBright("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")}
+${chalk.greenBright("━".repeat(process.stdout.columns))}
     `);
     const choices = [
         "Download with Link",
@@ -170,8 +240,7 @@ ${chalk.greenBright("━━━━━━━━━━━━━━━━━━━�
                 },
             },
         ]);
-        const downloader = linkToClass.get([...linkToClass.keys()].find((e) => mangaUrl.mangaUrl.includes(e)));
-        downloader.download(mangaUrl.mangaUrl, chapter.chapterStart, chapter.count);
+        downloadMangaFromLink(mangaUrl.mangaUrl, chapter.chapterStart, chapter.count);
     }
 };
 

@@ -8,6 +8,7 @@ import { createSpinner, Spinner } from "nanospinner";
 
 export default class MangaKatana {
     async getChapters(url: string, start = 0, count = 0, spinner: Spinner) {
+        count = start === 0 ? 9999 : count;
         const data: { name: string; url: string }[] = [];
         const raw = await fetch(url);
         if (!raw.ok) {

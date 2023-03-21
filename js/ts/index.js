@@ -2,6 +2,7 @@ import chalk from "chalk";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import inquirer from "inquirer";
 import path from "path";
+import pkgJSON from "../package.json";
 import CubariGist from "./CubariGist.js";
 import MangaKatana from "./MangaKatana.js";
 import MangareaderTo from "./MangareaderTo.js";
@@ -53,7 +54,7 @@ const downloadMangaFromLink = async (mangaURL, chapterStart, chapterCount) => {
     const downloader = linkToClass.get([...linkToClass.keys()].find((e) => mangaURL.includes(e)));
     await downloader.download(mangaURL, chapterStart, chapterCount);
 };
-program.name("Manga Downloader").description("CLI to download manga from hosting sites.");
+program.name("Manga Downloader").description("CLI to download manga from hosting sites.").version(pkgJSON.version);
 program
     .command("manga")
     .description("Download Manga from Link")
@@ -86,6 +87,12 @@ program
         console.error(chalk.redBright("Site not supported."));
         process.exit(1);
     }
+});
+program
+    .command("check")
+    .description("Check quick links for new chapters(manga folder must have last chapter for this to work)")
+    .action(() => {
+    checkNewRelease();
 });
 if (process.argv.length > 2)
     // move to end

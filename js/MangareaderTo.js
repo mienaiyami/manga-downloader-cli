@@ -8,6 +8,7 @@ import { createSpinner } from "nanospinner";
 import path from "path";
 export default class MangareaderTo {
     async getChapters(url, start = 0, count = 0) {
+        count = start === 0 ? 9999 : count;
         const data = [];
         const raw = await fetch(url);
         if (!raw.ok) {
@@ -29,7 +30,7 @@ export default class MangareaderTo {
             // spinner.clear();
             console.log(chalk.redBright("mangareader.to chapter link used. Chapter name might not be accurate."));
             // spinner.start();
-            const chapters = [{ name, url }];
+            const chapters = [{ name, url, number: 0 }];
             return { mangaName, chapters };
         }
         const mangaName = makeFileSafe(document.querySelector("#ani_detail .manga-name")?.textContent || "eeeeeeeeee");
@@ -56,7 +57,7 @@ export default class MangareaderTo {
             data.push(...tempData
                 .sort((a, b) => (a.number < b.number ? -1 : 1))
                 .splice(start)
-                .map((e) => ({ name: e.name, url: e.url }))
+                // .map((e) => ({ name: e.name, url: e.url }))
                 .reverse());
         }
         else
@@ -69,6 +70,7 @@ export default class MangareaderTo {
                             data.push({
                                 name: makeFileSafe(anchor?.title) || "",
                                 url: `https://mangareader.to` + anchor.href,
+                                number: chapterNumber,
                             });
                         }
                     }
@@ -138,17 +140,20 @@ export default class MangareaderTo {
             fs.readdir(mangaDir, async (err, files) => {
                 if (err)
                     return console.error(err);
-                let lastChapterIndex = -1;
+                let lastChapterNumber = -1;
                 chapters.forEach((e, i) => {
                     if (files.includes(e.name))
-                        lastChapterIndex = i;
+                        lastChapterNumber = e.number;
                 });
-                if (lastChapterIndex !== chapters.length - 1) {
-                    const newChapterIndex = lastChapterIndex + 1;
+                console.log(lastChapterNumber, chapters.length);
+                if (lastChapterNumber < chapters[chapters.length - 1].number) {
+                    const LCIndex = chapters.findIndex((e) => e.number === lastChapterNumber);
+                    // coz can be float
+                    const newChapterNumberStart = chapters[LCIndex + 1].number;
                     spinner.success({
-                        text: chalk.greenBright(`${newChapterIndex - lastChapterIndex + 1} new chapters in "${mangaName}".`),
+                        text: chalk.greenBright(`${chapters.splice(LCIndex + 1).length} new chapters in "${mangaName}".`),
                     });
-                    return this.download(link, newChapterIndex + 1, 9999);
+                    return this.download(link, newChapterNumberStart, 9999);
                 }
                 else
                     spinner.success({ text: chalk.greenBright('No new chapters in "' + mangaName + '"') });

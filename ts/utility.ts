@@ -16,4 +16,5 @@ export type ISETTINGS = {
     quickLinks: string[];
 };
 export const settingsPath = path.resolve("./SETTINGS.json");
-export const makeLine = (n = 30, color = chalk.greenBright) => console.log(color("━".repeat(n)));
+export const makeLine = (n = process.stdout.columns, color = chalk.greenBright) =>
+    console.log(color("━".repeat(n)));
