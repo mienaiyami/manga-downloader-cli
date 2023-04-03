@@ -6,7 +6,7 @@ import chalk from "chalk";
 import { createSpinner } from "nanospinner";
 export default class MangaKatana {
     async getChapters(url, start = 0, count = 0, spinner) {
-        count = start === 0 ? 9999 : count;
+        count = start === 0 && count === 0 ? 9999 : count;
         const data = [];
         const raw = await fetch(url);
         if (!raw.ok) {

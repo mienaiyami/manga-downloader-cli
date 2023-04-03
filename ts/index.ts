@@ -3,10 +3,11 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import inquirer from "inquirer";
 import { createSpinner } from "nanospinner";
 import path from "path";
-import pkgJSON from "../package.json";
+// import pkgJSON from "../package.json";
 import CubariGist from "./CubariGist.js";
 import MangaKatana from "./MangaKatana.js";
 import MangareaderTo from "./MangareaderTo.js";
+import DynastyScans from "./DynastyScans.js";
 import { ISETTINGS, settingsPath, sleep } from "./utility.js";
 
 // const cubariGistLink = "https://gist.githubusercontent.com/funkyhippo/1d40bd5dae11e03a6af20e5a9a030d81/raw/?";
@@ -38,7 +39,9 @@ const addQuickLinkToSettings = (url: string, note: string) => {
 const linkToClass = new Map();
 linkToClass.set("https://mangareader.to/", MangareaderTo);
 linkToClass.set("https://gist.githubusercontent.com/", CubariGist);
+linkToClass.set("https://raw.githubusercontent.com/", CubariGist);
 linkToClass.set("https://mangakatana.com/", MangaKatana);
+linkToClass.set("https://dynasty-scans.com/", DynastyScans);
 
 const validSite = (url: string) => {
     for (const e of linkToClass.keys()) {
@@ -49,8 +52,10 @@ const validSite = (url: string) => {
 
 const checkNewRelease = async () => {
     console.log("Checking for new chapters from quick links...");
+
     for (const entry of SETTINGS.quickLinks) {
         const link = entry.split(" => ")[0];
+
         const downloader = linkToClass.get([...linkToClass.keys()].find((e) => link.includes(e)));
         await downloader.checkForNew(link);
         await sleep(3000);
@@ -63,7 +68,7 @@ const downloadMangaFromLink = async (mangaURL: string, chapterStart: number, cha
     await downloader.download(mangaURL, chapterStart, chapterCount);
 };
 
-program.name("Manga Downloader").description("CLI to download manga from hosting sites.").version(pkgJSON.version);
+program.name("Manga Downloader").description("CLI to download manga from hosting sites.").version("0.0.1");
 
 program
     .command("manga")
@@ -132,8 +137,9 @@ ${chalk.greenBright(
 
 Supported sites:
  - https://mangareader.to/  (can't download shuffled images.)
- - https://cubari.moe/  (gist link only e.x. https://gist.githubusercontent.com/)
+ - https://cubari.moe/  (gist link only e.x. https://gist.githubusercontent.com/ or https://raw.githubusercontent.com/)
  - https://mangakatana.com/
+ - https://dynasty-scans.com/
 
 ${chalk.greenBright("━".repeat(process.stdout.columns))}
 
@@ -244,4 +250,4 @@ ${chalk.greenBright("━".repeat(process.stdout.columns))}
     }
 };
 
-await start();
+start();

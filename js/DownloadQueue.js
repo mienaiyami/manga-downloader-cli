@@ -111,10 +111,10 @@ export default class DownloadQueue {
             process.stdout.clearLine(0);
             process.stdout.cursorTo(0);
             if (this.retryCount[i - 1] > 3)
-                return console.error(chalk.redBright("Unable to donload page " + i + "."));
-            console.error(chalk.redBright("Could not download page " + i + ", retrying in 10sec"));
-            await sleep(10000);
-            this.downloadImage(url, i - 1, dir);
+                return console.error(chalk.redBright("Unable to download page " + i + "."));
+            console.error(chalk.redBright("Could not download page " + i + ", retrying in 6sec"));
+            await sleep(6000);
+            return this.downloadImage(url, i - 1, dir);
         }
     }
 }

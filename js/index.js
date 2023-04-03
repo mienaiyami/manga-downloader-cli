@@ -2,9 +2,11 @@ import chalk from "chalk";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import inquirer from "inquirer";
 import path from "path";
+// import pkgJSON from "../package.json";
 import CubariGist from "./CubariGist.js";
 import MangaKatana from "./MangaKatana.js";
 import MangareaderTo from "./MangareaderTo.js";
+import DynastyScans from "./DynastyScans.js";
 import { settingsPath, sleep } from "./utility.js";
 // const cubariGistLink = "https://gist.githubusercontent.com/funkyhippo/1d40bd5dae11e03a6af20e5a9a030d81/raw/?";
 // Cubari.download(cubariGistLink, 167);
@@ -31,7 +33,9 @@ const addQuickLinkToSettings = (url, note) => {
 const linkToClass = new Map();
 linkToClass.set("https://mangareader.to/", MangareaderTo);
 linkToClass.set("https://gist.githubusercontent.com/", CubariGist);
+linkToClass.set("https://raw.githubusercontent.com/", CubariGist);
 linkToClass.set("https://mangakatana.com/", MangaKatana);
+linkToClass.set("https://dynasty-scans.com/", DynastyScans);
 const validSite = (url) => {
     for (const e of linkToClass.keys()) {
         if (url.includes(e))
@@ -53,7 +57,7 @@ const downloadMangaFromLink = async (mangaURL, chapterStart, chapterCount) => {
     const downloader = linkToClass.get([...linkToClass.keys()].find((e) => mangaURL.includes(e)));
     await downloader.download(mangaURL, chapterStart, chapterCount);
 };
-program.name("Manga Downloader").description("CLI to download manga from hosting sites.");
+program.name("Manga Downloader").description("CLI to download manga from hosting sites.").version("0.0.1");
 program
     .command("manga")
     .description("Download Manga from Link")
@@ -87,6 +91,12 @@ program
         process.exit(1);
     }
 });
+program
+    .command("check")
+    .description("Check quick links for new chapters(manga folder must have last chapter for this to work)")
+    .action(() => {
+    checkNewRelease();
+});
 if (process.argv.length > 2)
     // move to end
     program.parse();
@@ -110,8 +120,9 @@ ${chalk.greenBright("━".repeat((process.stdout.columns - 18) / 2) +
 
 Supported sites:
  - https://mangareader.to/  (can't download shuffled images.)
- - https://cubari.moe/  (gist link only e.x. https://gist.githubusercontent.com/)
+ - https://cubari.moe/  (gist link only e.x. https://gist.githubusercontent.com/ or https://raw.githubusercontent.com/)
  - https://mangakatana.com/
+ - https://dynasty-scans.com/
 
 ${chalk.greenBright("━".repeat(process.stdout.columns))}
 
@@ -219,4 +230,4 @@ ${chalk.greenBright("━".repeat(process.stdout.columns))}
         downloadMangaFromLink(mangaUrl.mangaUrl, chapter.chapterStart, chapter.count);
     }
 };
-await start();
+start();

@@ -1,5 +1,5 @@
 import fetch from "node-fetch";
-import { makeFileSafe, settingsPath } from "./utility.js";
+import { makeFileSafe, settingsPath, sleep } from "./utility.js";
 import DownloadQueue from "./DownloadQueue.js";
 import chalk from "chalk";
 import { createSpinner } from "nanospinner";
@@ -17,41 +17,119 @@ export default class Cubari {
             const json = (await raw.json());
             if (json) {
                 const filtered = [];
-                if (start < 0) {
-                    const tempData = [];
-                    for (const key in json.chapters) {
-                        const obj = json.chapters[key];
-                        tempData.push({
-                            name: makeFileSafe(obj.title),
-                            pages: obj.groups[Object.keys(obj.groups)[0]],
-                            number: parseFloat(key),
-                        });
-                    }
-                    filtered.push(...tempData
-                        .sort((a, b) => (a.number < b.number ? -1 : 1))
-                        .splice(start)
-                        .map((e) => ({ name: e.name, pages: e.pages })));
-                }
-                else
-                    for (const key in json.chapters) {
-                        if (parseFloat(key) >= start && parseFloat(key) <= start + count) {
+                const chapterAny = json.chapters[Object.keys(json.chapters)[0]];
+                const groupAny = chapterAny.groups[Object.keys(chapterAny.groups)[0]];
+                if (typeof groupAny === "string") {
+                    if (start < 0) {
+                        const tempData = [];
+                        for (const key in json.chapters) {
                             const obj = json.chapters[key];
-                            filtered.push({
+                            const pagesJSONraw = await fetch(obj.groups[Object.keys(obj.groups)[0]].replace("/proxy", "https://cubari.moe/read"));
+                            const pagesJSON = await pagesJSONraw.json();
+                            if (pagesJSON instanceof Array) {
+                                tempData.push({
+                                    name: makeFileSafe(`Chapter ${key} ${obj.title}`),
+                                    pages: pagesJSON.map((e) => e.src),
+                                    number: parseFloat(key),
+                                });
+                            }
+                            else
+                                tempData.push({
+                                    name: makeFileSafe(`Chapter ${key} ${obj.title}`),
+                                    pages: [],
+                                    number: parseFloat(key),
+                                });
+                        }
+                        filtered.push(...tempData
+                            .sort((a, b) => (a.number < b.number ? -1 : 1))
+                            .splice(start)
+                            .map((e) => ({ name: e.name, pages: e.pages })));
+                    }
+                    else {
+                        const tempData = [];
+                        spinner.update({ text: "Fetching image links..." });
+                        for (const key in json.chapters) {
+                            if (parseFloat(key) >= start && parseFloat(key) <= start + count) {
+                                const obj = json.chapters[key];
+                                /**
+                                 *
+                                "groups": {
+                                "Tempest": "/proxy/api/imgur/chapter/8oF9Tzl/"
+                                },
+
+                                main -> https://cubari.moe/read/api/imgur/chapter/kFT21rA/
+                                */
+                                await sleep(200);
+                                const pagesJSONraw = await fetch(obj.groups[Object.keys(obj.groups)[0]].replace("/proxy", "https://cubari.moe/read"));
+                                const pagesJSON = await pagesJSONraw.json();
+                                if (pagesJSON instanceof Array) {
+                                    tempData.push({
+                                        name: makeFileSafe(`Chapter ${key} ${obj.title}`),
+                                        pages: pagesJSON.map((e) => e.src),
+                                        number: parseFloat(key),
+                                    });
+                                }
+                                else
+                                    tempData.push({
+                                        name: makeFileSafe(`Chapter ${key} ${obj.title}`),
+                                        pages: [],
+                                        number: parseFloat(key),
+                                    });
+                            }
+                        }
+                        spinner.update({ text: "Preparing for download..." });
+                        console.log(tempData);
+                        filtered.push(...tempData
+                            .sort((a, b) => (a.number < b.number ? -1 : 1))
+                            .map((e) => ({ name: e.name, pages: e.pages })));
+                    }
+                    if (filtered.length > 0) {
+                        spinner.success();
+                        const queue = new DownloadQueue(json.title, filtered, 500);
+                        queue.start();
+                    }
+                    else
+                        spinner.error({ text: "No chapters found." });
+                }
+                else {
+                    if (start < 0) {
+                        const tempData = [];
+                        for (const key in json.chapters) {
+                            const obj = json.chapters[key];
+                            tempData.push({
                                 name: makeFileSafe(obj.title),
                                 pages: obj.groups[Object.keys(obj.groups)[0]],
+                                number: parseFloat(key),
                             });
                         }
+                        filtered.push(...tempData
+                            .sort((a, b) => (a.number < b.number ? -1 : 1))
+                            .splice(start)
+                            .map((e) => ({ name: e.name, pages: e.pages })));
                     }
-                // fs.writeFileSync("./test.json",JSON.stringify(filtered,null,"\t"));
-                if (filtered.length > 0) {
-                    spinner.success();
-                    const queue = new DownloadQueue(json.title, filtered);
-                    queue.start();
+                    else
+                        for (const key in json.chapters) {
+                            if (parseFloat(key) >= start && parseFloat(key) <= start + count) {
+                                const obj = json.chapters[key];
+                                filtered.push({
+                                    name: makeFileSafe(obj.title),
+                                    pages: obj.groups[Object.keys(obj.groups)[0]],
+                                });
+                            }
+                        }
+                    // fs.writeFileSync("./test.json",JSON.stringify(filtered,null,"\t"));
+                    if (filtered.length > 0) {
+                        spinner.success();
+                        const queue = new DownloadQueue(json.title, filtered);
+                        queue.start();
+                    }
+                    else
+                        spinner.error({ text: "No chapters found." });
+                    // filtered.forEach((e) => {
+                    //     const savePath = path.join(saveDir, e.name);
+                    //     e.pages.forEach((e, i) => saveImage(e, i, savePath));
+                    // });
                 }
-                // filtered.forEach((e) => {
-                //     const savePath = path.join(saveDir, e.name);
-                //     e.pages.forEach((e, i) => saveImage(e, i, savePath));
-                // });
             }
             else
                 spinner.error({ text: "Unable to parse JSON." });
@@ -109,13 +187,42 @@ export default class Cubari {
             if (json) {
                 spinner.update({ text: 'Checking for new chapters in "' + json.title + '"' });
                 const chapters = [];
-                for (const key in json.chapters) {
-                    const obj = json.chapters[key];
-                    chapters.push({
-                        name: makeFileSafe(obj.title),
-                        pages: obj.groups[Object.keys(obj.groups)[0]],
-                        number: parseFloat(key),
-                    });
+                const chapterAny = json.chapters[Object.keys(json.chapters)[0]];
+                const groupAny = chapterAny.groups[Object.keys(chapterAny.groups)[0]];
+                if (typeof groupAny === "string") {
+                    for (const key in json.chapters) {
+                        const obj = json.chapters[key];
+                        // await sleep(200);
+                        // const pagesJSONraw = await fetch(
+                        //     (obj.groups[Object.keys(obj.groups)[0]] as string).replace(
+                        //         "/proxy",
+                        //         "https://cubari.moe/read"
+                        //     )
+                        // );
+                        // const pagesJSON = await pagesJSONraw.json();
+                        // if (pagesJSON instanceof Array) {
+                        //     chapters.push({
+                        //         name: makeFileSafe(`Chapter ${key} ${obj.title}`),
+                        //         pages: pagesJSON.map((e) => e.src),
+                        //         number: parseFloat(key),
+                        //     });
+                        // } else
+                        chapters.push({
+                            name: makeFileSafe(`Chapter ${key} ${obj.title}`),
+                            pages: [],
+                            number: parseFloat(key),
+                        });
+                    }
+                }
+                else {
+                    for (const key in json.chapters) {
+                        const obj = json.chapters[key];
+                        chapters.push({
+                            name: makeFileSafe(obj.title),
+                            pages: obj.groups[Object.keys(obj.groups)[0]],
+                            number: parseFloat(key),
+                        });
+                    }
                 }
                 chapters.sort((a, b) => (a.number < b.number ? -1 : 1));
                 const mangaDir = path.join(JSON.parse(fs.readFileSync(settingsPath, "utf-8")).saveDir, json.title);
@@ -125,9 +232,10 @@ export default class Cubari {
                             return console.error(err);
                         let lastChapterNumber = -1;
                         chapters.forEach((e, i) => {
-                            if (files.includes(e.name))
+                            if (files.find((a) => a.toLocaleLowerCase() === e.name.toLocaleLowerCase()))
                                 lastChapterNumber = e.number;
                         });
+                        // console.log(lastChapterNumber, chapters.length);
                         if (lastChapterNumber < chapters[chapters.length - 1].number) {
                             const LCIndex = chapters.findIndex((e) => e.number === lastChapterNumber);
                             // coz can be float

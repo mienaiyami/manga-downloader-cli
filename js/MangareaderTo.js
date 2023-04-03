@@ -8,7 +8,7 @@ import { createSpinner } from "nanospinner";
 import path from "path";
 export default class MangareaderTo {
     async getChapters(url, start = 0, count = 0) {
-        count = start === 0 ? 9999 : count;
+        count = start === 0 && count === 0 ? 9999 : count;
         const data = [];
         const raw = await fetch(url);
         if (!raw.ok) {
@@ -142,10 +142,10 @@ export default class MangareaderTo {
                     return console.error(err);
                 let lastChapterNumber = -1;
                 chapters.forEach((e, i) => {
-                    if (files.includes(e.name))
+                    if (files.find((a) => a.toLocaleLowerCase() === e.name.toLocaleLowerCase()))
                         lastChapterNumber = e.number;
                 });
-                console.log(lastChapterNumber, chapters.length);
+                // console.log(lastChapterNumber, chapters.length);
                 if (lastChapterNumber < chapters[chapters.length - 1].number) {
                     const LCIndex = chapters.findIndex((e) => e.number === lastChapterNumber);
                     // coz can be float

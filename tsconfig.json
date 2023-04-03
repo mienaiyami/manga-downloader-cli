@@ -9,9 +9,7 @@
         "esModuleInterop": true,
         "typeRoots": ["./node_modules/@types"],
         "skipLibCheck": true,
-        "outDir": "./js/",
-        "resolveJsonModule": true
-        
+        "outDir": "./js/"
     },
     "include": ["./ts/"]
 }
