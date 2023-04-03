@@ -10,19 +10,15 @@ Supported sites:
 
 ## How to use
 
-Require nodejs v14+
+Require nodejs v14+, git.
+
 
 #### Installation
 
 Run
 ```
+git clone <link-to-this-repo>
 npm install
-```
-
-or 
-
-```
-yarn install
 ```
 
 in base directory.
@@ -38,3 +34,9 @@ in base directory or add base directory to env path and run
 manga
 ```
 anywhere in terminal.
+
+#### Update app
+
+```
+git pull
+```
